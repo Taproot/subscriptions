@@ -92,31 +92,31 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 // In the future, if changes are made, detect the version change and migrate accordingly.
 function migratePdoSubscriptionStorageTables(PDO $pdo, $prefix='') {
 	$result = $pdo->exec(<<<EOT
-CREATE TABLE IF NOT EXISTS `{$prefix}config` (
-`key` varchar(100) NOT NULL,
-`value` varchar(10000) NOT NULL,
-PRIMARY KEY (`key`)
+CREATE TABLE IF NOT EXISTS {$prefix}config (
+	key varchar(100) NOT NULL,
+	value varchar(10000) NOT NULL,
+	PRIMARY KEY (key)
 );
 
-CREATE TABLE IF NOT EXISTS `{$prefix}subscriptions` (
-`id` int(11) NOT NULL,
-`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-`last_updated` timestamp NULL DEFAULT NULL,
-`last_pinged` timestamp NULL DEFAULT NULL,
-`hub` varchar(500) NOT NULL,
-`mode` varchar(100) NOT NULL DEFAULT 'subscribe',
-`intent_verified` tinyint(1) NOT NULL DEFAULT '0',
-`topic` varchar(500) NOT NULL,
-PRIMARY KEY (`id`)
+CREATE TABLE IF NOT EXISTS {$prefix}subscriptions (
+	id int(11) NOT NULL,
+	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	last_updated timestamp NULL DEFAULT NULL,
+	last_pinged timestamp NULL DEFAULT NULL,
+	hub varchar(500) NOT NULL,
+	mode varchar(100) NOT NULL DEFAULT 'subscribe',
+	intent_verified tinyint(1) NOT NULL DEFAULT '0',
+	topic varchar(500) NOT NULL,
+	PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS `{$prefix}pings` (
-`id` varchar(500) NOT NULL,
-`subscription` int(11) NOT NULL,
-`datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-`content_type` varchar(100) NOT NULL,
-`content` text NOT NULL,
-PRIMARY KEY (`id`)
+CREATE TABLE IF NOT EXISTS {$prefix}pings (
+	id varchar(500) NOT NULL,
+	subscription int(11) NOT NULL,
+	datetime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	content_type varchar(100) NOT NULL,
+	content text NOT NULL,
+	PRIMARY KEY (id)
 );
 EOT
 	);
