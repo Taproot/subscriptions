@@ -19,13 +19,13 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 	protected $db;
 	protected $prefix;
 	
-	public function __construct(PDO $pdo, $tablePrefix = 'shrewdness_') {
+	public function __construct(PDO $pdo, $tablePrefix = '') {
 		$this->db = $pdo;
 		$this->prefix = $tablePrefix;
 	}
 	
 	public function migrate() {
-		migratePdoSubscriptionStorageTables($this->db, $this->prefix);
+		return migratePdoSubscriptionStorageTables($this->db, $this->prefix);
 	}
 	
 	public function getSubscriptions() {
@@ -46,7 +46,8 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 				$this->db->prepare("UPDATE {$this->prefix}subscriptions SET mode='subscribe' WHERE id = :id;")->execute($subscription);
 			}
 		} else {
-			$this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (topic, hub) VALUES (:topic, :hub);')->execute($subscription);
+			$subscription['id'] = md5(uniqid(time(), true));
+			$this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription);
 			$existingSubscription->execute($subscription);
 			$subscription = $existingSubscription->fetch();
 		}
@@ -71,7 +72,8 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 	}
 	
 	public function createPing(array $ping) {
-		$insertPing = $this->db->prepare('INSERT INTO ' . $this->prefix . 'pings (subscription, content_type, content) VALUES (:subscription, :content_type, :content);');
+		$ping['id'] = "{$ping['subscription']}." . time();
+		$insertPing = $this->db->prepare('INSERT INTO ' . $this->prefix . 'pings (id, subscription, content_type, content) VALUES (:id, :subscription, :content_type, :content);');
 		$insertPing->execute($ping);
 	}
 	
@@ -84,17 +86,18 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 
 
 // TODO: in the future, if changes are made, detect the version change and migrate accordingly.
-function migratePdoSubscriptionStorageTables(PDO $pdo, $prefix) {
-	// Check if tables exist
-	$pdo->exec(<<<EOT
+function migratePdoSubscriptionStorageTables(PDO $pdo, $prefix='') {
+	// TODO: this is a very bad way of implementing database abstraction. Make it better.
+	$autoincrementKeywork = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'sqlite' ? 'AUTOINCREMENT' : 'AUTO_INCREMENT';
+	$result = $pdo->exec(<<<EOT
 CREATE TABLE IF NOT EXISTS `{$prefix}config` (
 `key` varchar(100) NOT NULL,
 `value` varchar(10000) NOT NULL,
 PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE IF NOT EXISTS `{$prefix}subscriptions` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
+`id` int(11) NOT NULL,
 `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 `last_updated` timestamp NULL DEFAULT NULL,
 `last_pinged` timestamp NULL DEFAULT NULL,
@@ -103,30 +106,27 @@ CREATE TABLE IF NOT EXISTS `{$prefix}subscriptions` (
 `intent_verified` tinyint(1) NOT NULL DEFAULT '0',
 `topic` varchar(500) NOT NULL,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE IF NOT EXISTS `{$prefix}pings` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
+`id` varchar(500) NOT NULL,
 `subscription` int(11) NOT NULL,
 `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 `content_type` varchar(100) NOT NULL,
 `content` text NOT NULL,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+);
 EOT
 	);
 	
-	$currentVersion = PdoSubscriptionStorage::VERSION;
-	try {
-		$pdo->exec("INSERT INTO {$prefix}config (key, value) VALUES ('version', {$version});");
-	} catch (Exception $e) {}
-}
-
-function tableExists(PDO $pdo, $tableName) {
-	try {
-		$result = $pdo->query("SELECT 1 FROM {$tableName} LIMIT 1;");
-	} catch (Exception $e) {
+	if ($result === false) {
 		return false;
 	}
-	return $result !== false;
+	
+	$currentVersion = PdoSubscriptionStorage::VERSION;
+	try {
+		$result = $pdo->exec("INSERT INTO {$prefix}config (key, value) VALUES ('version', {$pdo->quote($currentVersion)});");
+	} catch (Exception $e) {}
+	
+	return true;
 }
