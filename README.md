@@ -60,4 +60,62 @@ Navigate to wherever you mounted the subscriptions routes on your site to see th
 
 ## API
 
-TODO: write this
+### Subscribe to a feed
+
+```php
+<?php
+
+use Taproot\Subscriptions;
+
+list($subscription, $error) = Subscriptions\subscribe($app, 'http://waterpigs.co.uk');
+if ($error !== null) {
+	// There was a problem, and $error is a Guzzle Exception with more information about exactly what.
+} else {
+	// Otherwise, $subscription is an array representing the subscription which was just created
+}
+```
+
+### Subscribe to a feed and crawl historical content
+
+```php
+<?php
+
+use Taproot\Subscriptions;
+
+// The extra (optional) argument is a callback to be run for each page which gets crawled, in addition to any listeners
+// on subscriptions.ping — handy e.g. for logging purposes
+list($subscription, $error) = Subscriptions\subscribeAndCrawl($app, 'http://waterpigs.co.uk', function ($resource) {
+	echo "Crawled {$resource['url']}\n";
+});
+
+```
+
+### Perform tasks on new/old content
+
+Whenever a feed resource, whether current from a subscription ping or historical from crawling rel=prev[ious] links, the `subscriptions.ping` event is dispatched on `$app['dispatcher']` with a GenericEvent containing information about the resource.
+
+You can either attach a listener to that event, or pass one as the third argument to Subscriptions\controllers() — they accomplish the exact same thing, one is just a shortcut.
+
+TODO: document exactly what properties the event has.
+
+Your handlers should be written in such a way that running them over the same content multiple times doesn’t produce duplicate results, as it’s entirely possible that they will be run multiple times.
+
+E.G. a typical h-feed subscription should looks something like this (pseudocode):
+
+```php
+<?php
+
+function ($resource) {
+	$posts = postsFromMicroformats($resource['mf']);
+	foreach ($posts as $post) {
+		createOrUpdatePost($post);
+	}
+}
+```
+
+
+# Changelog 
+
+## v0.1.0
+
+* First version
