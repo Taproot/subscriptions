@@ -92,6 +92,7 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 // In the future, if changes are made, detect the version change and migrate accordingly.
 function migratePdoSubscriptionStorageTables(PDO $pdo, $prefix='') {
 	$idColumnDefinition = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'pgsql' ? 'int' : 'int(11)';
+	$boolColumnDefinition = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'pgsql' ? 'int' : 'tinyint(1)';
 	$result = $pdo->exec(<<<EOT
 CREATE TABLE IF NOT EXISTS {$prefix}config (
 	key varchar(100) NOT NULL,
@@ -106,7 +107,7 @@ CREATE TABLE IF NOT EXISTS {$prefix}subscriptions (
 	last_pinged timestamp NULL DEFAULT NULL,
 	hub varchar(500) NOT NULL,
 	mode varchar(100) NOT NULL DEFAULT 'subscribe',
-	intent_verified tinyint(1) NOT NULL DEFAULT '0',
+	intent_verified {$boolColumnDefinition} NOT NULL DEFAULT '0',
 	topic varchar(500) NOT NULL,
 	PRIMARY KEY (id)
 );
