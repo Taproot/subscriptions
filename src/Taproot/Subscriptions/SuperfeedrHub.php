@@ -2,6 +2,8 @@
 
 namespace Taproot\Subscriptions;
 
+use Guzzle;
+
 class SuperfeedrHub extends PushHub {
 	protected $username;
 	protected $token;
