@@ -211,15 +211,27 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 		$app['dispatcher']->addListener('subscriptions.ping', $contentCallbackFunction);
 	}
 	
+	$render = function ($template, $__templateData=array()) {
+		$__basedir = __DIR__;
+		$render = function ($__path, $__templateData) use ($__basedir) {
+			ob_start();
+			extract($__templateData);
+			unset($__templateData);
+			include $__basedir . '/../templates/' . $__path . '.php';
+			return ob_get_clean();
+		};
+		return $render($template, $__templateData);
+	};
+	
 	// Subscription list.
-	$subscriptions->get('/', function (Http\Request $request) use ($app, $storage) {
+	$subscriptions->get('/', function (Http\Request $request) use ($app, $storage, $render) {
 		$subscriptions = $storage->getSubscriptions();
 		
 		foreach ($subscriptions as &$subscription) {
 			$subscription['url'] = $app['url_generator']->generate('subscriptions.id.get', ['id' => $subscription['id']]);
 		}
 		
-		return $app['render']('subscriptions.html', [
+		return $render('subscriptions.html', [
 			'subscriptions' => $subscriptions,
 			'newSubscriptionUrl' => $app['url_generator']->generate('subscriptions.post'),
 			'crawlUrl' => $app['url_generator']->generate('subscriptions.crawl')
@@ -280,7 +292,7 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 	
 	
 	// Subscription summary, list of recent pings.
-	$subscriptions->get('/{id}/', function (Http\Request $request, $id) use ($app, $storage) {
+	$subscriptions->get('/{id}/', function (Http\Request $request, $id) use ($app, $storage, $render) {
 		$subscription = $storage->getSubscription($id);
 		if (empty($subscription)) {
 			return $app->abort(404, 'No such subscription found!');
@@ -291,7 +303,7 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 			$ping['url'] = $app['url_generator']->generate('subscriptions.id.ping.datetime', ['id' => $id, 'timestamp' => (new Datetime($ping['datetime']))->format('Y-m-d\TH:i:s')]);
 		}
 		
-		return $app['render']('subscription.html', [
+		return $render('subscription.html', [
 			'subscription' => $subscription,
 			'pings' => $pings
 		]);
