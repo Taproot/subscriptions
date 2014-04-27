@@ -46,7 +46,10 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 				$this->db->prepare("UPDATE {$this->prefix}subscriptions SET mode='subscribe' WHERE id = :id;")->execute($subscription);
 			}
 		} else {
-			$subscription['id'] = md5(uniqid(time(), true));
+			// Create a sufficiently random ID for the subscription.
+			// Not relying on database autoincrement as this ID is used in public endpoints. In the case of unsigned ping requests
+			// this provides minimal security by obscurity.
+			$subscription['id'] = uniqid(time(), true);
 			$this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription);
 			$existingSubscription->execute($subscription);
 			$subscription = $existingSubscription->fetch();
@@ -72,6 +75,7 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 	}
 	
 	public function createPing(array $ping) {
+		// Create unique ID for this ping without depending on DB-specific autoincrementation.
 		$ping['id'] = "{$ping['subscription']}." . time();
 		$insertPing = $this->db->prepare('INSERT INTO ' . $this->prefix . 'pings (id, subscription, content_type, content) VALUES (:id, :subscription, :content_type, :content);');
 		$insertPing->execute($ping);
@@ -85,10 +89,8 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 }
 
 
-// TODO: in the future, if changes are made, detect the version change and migrate accordingly.
+// In the future, if changes are made, detect the version change and migrate accordingly.
 function migratePdoSubscriptionStorageTables(PDO $pdo, $prefix='') {
-	// TODO: this is a very bad way of implementing database abstraction. Make it better.
-	$autoincrementKeywork = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'sqlite' ? 'AUTOINCREMENT' : 'AUTO_INCREMENT';
 	$result = $pdo->exec(<<<EOT
 CREATE TABLE IF NOT EXISTS `{$prefix}config` (
 `key` varchar(100) NOT NULL,

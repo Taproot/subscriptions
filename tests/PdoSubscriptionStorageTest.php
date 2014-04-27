@@ -13,7 +13,7 @@ class PdoSubscriptionStorageTest extends PHPUnit_Framework_TestCase {
 		
 		$this->assertTrue($success);
 		
-		$result = $pdo->query('SELECT * FROM config WHERE key=' . $pdo->quote('version') . ';');
+		$result = $pdo->query('SELECT * FROM config WHERE key=' . $pdo->quote(' version') . ';');
 		$this->assertTrue($result !== false);
 		
 		$row = $result->fetch();
