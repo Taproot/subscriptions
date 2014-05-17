@@ -173,7 +173,7 @@ function subscribeAndCrawl($app, $url, $crawlCallback = null, $timeout = null, $
 	}
 	
 	$error = crawl($url, function ($resource) use ($app, $crawlCallback) {
-		$app['dispatcher']->dispatch('subscriptions.ping', new EventDispatcher\GenericEvent($resource['response'], $resource));
+		$app['dispatcher']->dispatch('subscriptions.ping', new EventDispatcher\GenericEvent(null, $resource));
 		$crawlCallback($resource);
 	}, $timeout, $client, ['topic' => $subscription['topic']]);
 	
