@@ -51,7 +51,10 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 			// this provides minimal security by obscurity.
 			$subscription['id'] = uniqid(time(), true);
 			$this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription);
-			$existingSubscription->execute($subscription);
+			$existingSubscription->execute([
+				'topic' => $subscription['topic'],
+				'hub' => $subscription['hub']
+			]);
 			$subscription = $existingSubscription->fetch();
 		}
 		
