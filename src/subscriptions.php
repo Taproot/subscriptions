@@ -52,8 +52,27 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
 	if ($result instanceof Exception) {
 		return [null, $result];
 	}
-	
+
+	// Allow clients to access the content of the fetched page after subscribing.
+	$subscription['resource'] = contextFromResponse($resp->getBody(1), $resp->getEffectiveUrl(), $subscription['topic']);
+
 	return [$subscription, null];
+}
+
+
+function contextFromResponse($html, $url, $topic) {
+	$content = $html;
+	$parser = new Mf2\Parser($content, $url);
+	$mf2 = $parser->parse();
+
+	return [
+			'topic' => $topic,
+			'url' => $url,
+			'mf2' => $mf2,
+			'content' => $content,
+			'domdocument' => $parser->doc,
+			'parser' => $parser
+	];
 }
 
 
@@ -67,7 +86,7 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
  *
  * @TODO: make this function check for duplicate content (pass previousResponse on recurse) and halt if duplicated.
  */
-function crawl($url, $callback, $timeout=null, $client=null) {
+function crawl($url, $callback, $timeout=null, $client=null, $extraContext=[]) {
 	if ($timeout !== null) {
 		$timeStarted = microtime(true);
 	} elseif ($timeout !== null and $timeout <= 0) {
@@ -91,18 +110,12 @@ function crawl($url, $callback, $timeout=null, $client=null) {
 	if ($err !== null) {
 		return $err;
 	}
+
+	// In this case, topic is empty unless set by $extraContext
+	$context = array_merge($extraContext, contextFromResponse($resp->getBody(1), $resp->getEffectiveUrl(), null));
+	$mf2 = $context['mf2'];
 	
-	$parser = new Mf2\Parser($resp->getBody(1), $resp->getEffectiveUrl());
-	$mf2 = $parser->parse();
-	
-	$result = $callback([
-		'url' => $resp->getEffectiveUrl(),
-		'mf2' => $mf2,
-		'response' => $resp,
-		'content' => $resp->getBody(1),
-		'domdocument' => $parser->doc,
-		'parser' => $parser
-	]);
+	$result = $callback($context);
 	
 	$prevUrl = !empty($mf2['rels']['prev']) ? $mf2['rels']['prev'][0] : !empty($mf2['rels']['previous']) ? $mf2['rels']['previous'][0] : null;
 	
@@ -162,7 +175,7 @@ function subscribeAndCrawl($app, $url, $crawlCallback = null, $timeout = null, $
 	$error = crawl($url, function ($resource) use ($app, $crawlCallback) {
 		$app['dispatcher']->dispatch('subscriptions.ping', new EventDispatcher\GenericEvent($resource['response'], $resource));
 		$crawlCallback($resource);
-	}, $timeout, $client);
+	}, $timeout, $client, ['topic' => $subscription['topic']]);
 	
 	if ($error !== null) {
 		return [null, $error];
@@ -374,15 +387,11 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 		$storage->createPing($ping);
 		
 		$response = new Guzzle\Http\Message\Response(200, $request->headers->all(), $request->getContent());
-		$parser = new Mf2\Parser($request->getContent(), $subscription['topic']);
-		$event = new EventDispatcher\GenericEvent($response, [
-			'url' => $subscription['topic'],
-			'mf2' => $mf2,
-			'response' => $response,
-			'content' => $request->getContent(),
-			'domdocument' => $parser->doc,
-			'parser' => $parser
-		]);
+		// In this case we do not know the exact URL, but can safely assume that it is the topic of the subscription.
+		$event = new EventDispatcher\GenericEvent($response, contextFromResponse(
+				$response->getBody(1),
+				$subscription['topic'],
+				$subscription['topic']));
 		$app['dispatcher']->dispatch('subscriptions.ping', $event);
 		
 		return '';

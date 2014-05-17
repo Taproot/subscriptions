@@ -116,6 +116,11 @@ function ($resource) {
 
 # Changelog 
 
+## dev-master (unversioned so far)
+
+* Added unsaved “resource” key to `$subscription` return value, containing HTML+URL+microformats and such things, for immediate use
+* Standardised how resource-processing event contexts are built
+
 ## v0.1.0
 
 * First version
