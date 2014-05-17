@@ -120,6 +120,7 @@ function ($resource) {
 
 * Added unsaved “resource” key to `$subscription` return value, containing HTML+URL+microformats and such things, for immediate use
 * Standardised how resource-processing event contexts are built
+* Changed the PdoSubscriptionStorage ID column definition to varchar to allow more flexible IDs
 
 ## v0.1.0
 
