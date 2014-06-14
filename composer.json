@@ -9,8 +9,8 @@
 	"minimum-stability": "dev",
 	"require": {
 		"psr/log": "*",
-		"mf2/mf2": "~0.2",
-		"mf2/shim": "~0.2",
+		"mf2/mf2": "*",
+		"mf2/shim": "*",
 		"monolog/monolog": "*",
 		"guzzle/guzzle": "*"
 	},
