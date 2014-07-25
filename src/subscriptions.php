@@ -110,7 +110,7 @@ function contextFromResponse($html, $url, $headers, $topic) {
  *
  * @TODO: make this function check for duplicate content (pass previousResponse on recurse) and halt if duplicated.
  */
-function crawl($url, $callback, $timeout=null, $client=null, $extraContext=[]) {
+function crawl($url, $callback, $timeout=null, $client=null, $topic=null, $extraContext=[]) {
 	if ($timeout !== null) {
 		$timeStarted = microtime(true);
 	} elseif ($timeout !== null and $timeout <= 0) {
@@ -136,7 +136,7 @@ function crawl($url, $callback, $timeout=null, $client=null, $extraContext=[]) {
 	}
 
 	// In this case, topic is empty unless set by $extraContext
-	$context = array_merge($extraContext, contextFromResponse($resp->getBody(1), $resp->getEffectiveUrl(), $resp->getHeaders(), null));
+	$context = array_merge($extraContext, contextFromResponse($resp->getBody(1), $resp->getEffectiveUrl(), $resp->getHeaders(), $topic));
 	$mf2 = $context['mf2'];
 
 	$result = $callback($context);
@@ -199,7 +199,7 @@ function subscribeAndCrawl($app, $url, $crawlCallback = null, $timeout = null, $
 	$error = crawl($url, function ($resource) use ($app, $crawlCallback) {
 		$app['dispatcher']->dispatch('subscriptions.ping', new EventDispatcher\GenericEvent(null, $resource));
 		$crawlCallback($resource);
-	}, $timeout, $client, ['topic' => $subscription['topic']]);
+	}, $timeout, $client, $subscription['topic']);
 
 	if ($error !== null) {
 		return [null, $error];
