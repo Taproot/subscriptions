@@ -52,8 +52,9 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 			// Not relying on database autoincrement as this ID is used in public endpoints. In the case of unsigned ping requests
 			// this provides minimal security by obscurity.
 			$subscription['id'] = uniqid(time(), true);
-			if ($this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription) === false) {
-				return [null, new Exception('Failed saving subscription: ' . print_r($this->db->errorInfo(), true))];
+			$insertStatement = $this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);');
+			if ($insertStatement->execute($subscription) === false) {
+				return [null, new Exception('Failed saving subscription: ' . print_r($insertStatement->errorInfo(), true))];
 			}
 			$existingSubscription->execute([
 				'topic' => $subscription['topic'],
