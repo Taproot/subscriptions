@@ -345,23 +345,6 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 		->before($authFunction);
 
 
-	// Individual ping content view.
-	$subscriptions->get('/{id}/{timestamp}/', function (Http\Request $request, $id, $timestamp) use ($app, $storage) {
-		$ping = $storage->getPing($id, $timestamp);
-		if (empty($ping)) {
-			$app->abort(404, 'No such ping found!');
-		}
-
-		if (strstr($ping['content_type'], 'html') !== false) {
-			return new Http\Response($ping['content'], 200, ['Content-type' => 'text/plain']);
-		} else {
-			// Probably a bunch of potential attacks here, but for the moment it’s adequate.
-			return new Http\Response($ping['content'], 200, ['Content-type' => $ping['content_type']]);
-		}
-	})->bind('subscriptions.id.ping.datetime')
-		->before($authFunction);
-
-
 	// Verification of intent (public).
 	$subscriptions->get('/{id}/ping/', function (Http\Request $request, $id) use ($app, $storage) {
 		$subscription = $storage->getSubscription($id);
@@ -400,9 +383,9 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 		}
 
 		$ping = [
-			'subscription' => $subscription['id'],
-			'content_type' => $request->headers->get('Content-type'),
-			'content' => $request->getContent()
+				'subscription' => $subscription['id'],
+				'content_type' => $request->headers->get('Content-type'),
+				'content' => $request->getContent()
 		];
 
 		$storage->createPing($ping);
@@ -418,6 +401,23 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 
 		return '';
 	})->bind('subscriptions.id.ping');
+
+
+	// Individual ping content view.
+	$subscriptions->get('/{id}/{timestamp}/', function (Http\Request $request, $id, $timestamp) use ($app, $storage) {
+		$ping = $storage->getPing($id, $timestamp);
+		if (empty($ping)) {
+			$app->abort(404, 'No such ping found!');
+		}
+
+		if (strstr($ping['content_type'], 'html') !== false) {
+			return new Http\Response($ping['content'], 200, ['Content-type' => 'text/plain']);
+		} else {
+			// Probably a bunch of potential attacks here, but for the moment it’s adequate.
+			return new Http\Response($ping['content'], 200, ['Content-type' => $ping['content_type']]);
+		}
+	})->bind('subscriptions.id.ping.datetime')
+		->before($authFunction);
 
 	return $subscriptions;
 }
