@@ -43,14 +43,18 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 		if ($existingSubscription->rowCount() !== 0) {
 			$subscription = $existingSubscription->fetch();
 			if ($subscription['mode'] !== 'subscribe') {
-				$this->db->prepare("UPDATE {$this->prefix}subscriptions SET mode='subscribe' WHERE id = :id;")->execute($subscription);
+				if ($this->db->prepare("UPDATE {$this->prefix}subscriptions SET mode='subscribe' WHERE id = :id;")->execute($subscription) === false) {
+					return [null, new Exception('Failed updating subscription: ' . print_r($this->db->errorInfo(), true))];
+				}
 			}
 		} else {
 			// Create a sufficiently random ID for the subscription.
 			// Not relying on database autoincrement as this ID is used in public endpoints. In the case of unsigned ping requests
 			// this provides minimal security by obscurity.
 			$subscription['id'] = uniqid(time(), true);
-			$this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription);
+			if ($this->db->prepare('INSERT INTO ' . $this->prefix . 'subscriptions (id, topic, hub) VALUES (:id, :topic, :hub);')->execute($subscription) === false) {
+				return [null, new Exception('Failed saving subscription: ' . print_r($this->db->errorInfo(), true))];
+			}
 			$existingSubscription->execute([
 				'topic' => $subscription['topic'],
 				'hub' => $subscription['hub']
