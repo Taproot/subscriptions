@@ -57,7 +57,7 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 			]);
 			$subscription = $existingSubscription->fetch();
 			if ($subscription === false) {
-				return [null, new Exception('Failed retrieving subscription: ' . print_r($this->db->errorInfo(), true))];
+				return [null, new Exception('Failed retrieving subscription: ' . print_r($existingSubscription->errorInfo(), true))];
 			}
 		}
 		
