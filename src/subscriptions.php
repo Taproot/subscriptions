@@ -45,7 +45,10 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
 
 	$hub = empty($hubs) ? $defaultHub : new PushHub($hubs[0]);
 
-	$subscription = $storage->createSubscription($topic, $hub);
+	list($subscription, $err) = $storage->createSubscription($topic, $hub);
+	if ($err !== null) {
+		return [null, $err];
+	}
 	// Regardless of the state of the database beforehand, $subscription now exists, has an ID and a mode of “subscribe”.
 
 	$result = $hub->subscribe($topic, $app['url_generator']->generate('subscriptions.id.ping', ['id' => $subscription['id']], true));
