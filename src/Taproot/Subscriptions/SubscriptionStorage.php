@@ -15,8 +15,9 @@ interface SubscriptionStorage {
 	public function createSubscription($topic, PushHub $hub);
 	public function getSubscription($id);
 	public function getPingsForSubscription($id, $limit=20, $offset=0);
-	public function subscriptionIntentVerified($id);
+	public function subscriptionIntentVerified($id, $leaseSeconds=null);
 	public function getLatestPingForSubscription($id);
 	public function createPing(array $ping);
 	public function getPing($subscriptionId, $timestamp);
+	public function getExpiringSubscriptions();
 }

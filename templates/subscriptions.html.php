@@ -18,6 +18,7 @@
 			<th>Last Pinged</th>
 			<th>Last Updated</th>
 			<th>Created</th>
+			<th>Expires</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -31,6 +32,7 @@
 		<td><?= $subscription['last_pinged'] ?></td>
 		<td><?= $subscription['last_updated'] ?></td>
 		<td><?= $subscription['created'] ?></td>
+		<td><?= $subscription['expires'] ?></td>
 	</tr>
 <?php endforeach ?>
 	</tbody>

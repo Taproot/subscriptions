@@ -65,6 +65,24 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
 
 
 /**
+ * Renew Subscriptions
+ *
+ * Fetches all subscriptions from $app['subscriptions.storage'] which expire in a day or less, and renews them by
+ * re-subscribing.
+ *
+ * @param $app
+ * @param null $client
+ * @param null $defaultHub
+ * @return array Array of [$oldSubscription, $newSubscription, $error]
+ */
+function renew($app, $client = null, $defaultHub = null) {
+	return array_map(function ($subscription) use ($app, $client, $defaultHub) {
+		return array_merge([$subscription], subscribe($app, $subscription['topic'], $client, $defaultHub));
+	}, $app['subscriptions.storage']->getExpiringSubscriptions());
+}
+
+
+/**
  * @param $html
  * @param $url
  * @param $headers
@@ -208,7 +226,6 @@ function subscribeAndCrawl($app, $url, $crawlCallback = null, $timeout = null, $
 
 	return [$subscription, null];
 }
-
 
 /**
  * Subscription Controllers
@@ -360,7 +377,7 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 		if ($request->query->has('hub_mode')) {
 			$p = $request->query->all();
 			if ($p['hub_mode'] === $subscription['mode'] and $p['hub_topic'] === $subscription['topic']) {
-				$storage->subscriptionIntentVerified($id);
+				$storage->subscriptionIntentVerified($id, $request->query->get('hub_lease_seconds', null));
 				return $p['hub_challenge'];
 			} else {
 				return $app->abort(404, 'No such intent!');
@@ -402,6 +419,10 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 				$request->headers->all(),
 				$subscription['topic']));
 		$app['dispatcher']->dispatch('subscriptions.ping', $event);
+
+		// Take this opportunity to renew any subscriptions which are near-expiry.
+		$subscriptionRenewResults = renew($app);
+		$app['logger']->info('Renewed subscriptions', $subscriptionRenewResults);
 
 		return '';
 	})->bind('subscriptions.id.ping');

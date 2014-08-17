@@ -7,6 +7,7 @@
 	<!--<li>Last pinged: <?= $subscription['last_pinged'] ?></li>
 	<li>Last updated: <?= $subscription['last_updated'] ?></li>-->
 	<li>Created: <?= $subscription['created'] ?></li>
+	<li>Expires: <?= $subscription['expires'] ?></li>
 </ul>
 
 <h2>Recent Pings</h2>
