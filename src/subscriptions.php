@@ -44,7 +44,7 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
 	$hubs = $links['hub'];
 
 	// Only attempt HTML subscription if PuSH 0.4 is supported, i.e. both rel-hub and rel-self given.
-	$hub = (empty($hubs) and $topic !== null) ? $defaultHub : new PushHub($hubs[0]);
+	$hub = (empty($hubs) or $topic === null) ? $defaultHub : new PushHub($hubs[0]);
 
 	list($subscription, $err) = $storage->createSubscription($topic, $hub);
 	if ($err !== null) {
