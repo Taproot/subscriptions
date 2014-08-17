@@ -88,7 +88,7 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 			$expiryDateISO8601 = null;
 		}
 
-		$this->db->exec("UPDATE {$this->prefix}subscriptions SET intent_verified = 1, expires = {$expiryDateISO8601} WHERE id = {$this->db->quote($id)};");
+		$this->db->exec("UPDATE {$this->prefix}subscriptions SET intent_verified = 1, expires = {$this->db->quote($expiryDateISO8601)} WHERE id = {$this->db->quote($id)};");
 	}
 	
 	public function getLatestPingForSubscription($id) {
