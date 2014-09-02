@@ -395,19 +395,34 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 			return $app->abort(404, 'No such subscription found!');
 		}
 
+		$ping = [
+			'subscription' => $subscription['id'],
+			'content_type' => $request->headers->get('Content-type'),
+			'content' => $request->getContent()
+		];
+
+		// Check if this subscription type demands manual re-fetching of the content.
+		// As of 2014-09 this is the case with Superfeedr fragment subscriptions.
+		if ($subscription['hub'] == 'https://push.superfeedr.com') {
+			$client = $app['http.client'];
+			try {
+				$ping['content'] = $client->get($subscription['topic'])->send()->getBody(true);
+			} catch (Guzzle\Common\Exception\GuzzleException $e) {
+				$app['logger']->warn("Caught a HTTP exception whilst manually fetching content for Superfeedr fragment subscription {$subscription['id']}", [
+					'exception' => get_class($e),
+					'message' => $e->getMessage()
+				]);
+				return '';
+			}
+		}
+
 		// Compare content with most recent ping, if it exists.
 		$latestPing = $storage->getLatestPingForSubscription($id);
 
-		if (!empty($latestPing) and $latestPing['content'] == $request->getContent()) {
+		if (!empty($latestPing) and $latestPing['content'] == $ping['content']) {
 			$app['logger']->info("Not adding new ping for subscription {$id} as content is the same as previous ping.");
 			return '';
 		}
-
-		$ping = [
-				'subscription' => $subscription['id'],
-				'content_type' => $request->headers->get('Content-type'),
-				'content' => $request->getContent()
-		];
 
 		$storage->createPing($ping);
 
