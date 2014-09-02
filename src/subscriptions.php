@@ -36,6 +36,7 @@ function subscribe($app, $url, $client = null, $defaultHub = null) {
 		$resp = $client->get($url)->send();
 	} catch (Guzzle\Common\Exception\GuzzleException $e) {
 		// Resource does not exist, return exception
+		// TODO: this should return [null, $e] and be handled correctly.A
 		return $app->abort(400, "The given topic, {$url}, could not be fetched.");
 	}
 
@@ -426,7 +427,7 @@ function controllers($app, $authFunction = null, $contentCallbackFunction = null
 
 		$storage->createPing($ping);
 
-		$response = new Guzzle\Http\Message\Response(200, $request->headers->all(), $request->getContent());
+		$response = new Guzzle\Http\Message\Response(200, $request->headers->all(), $ping['content']);
 		// In this case we do not know the exact URL, but can safely assume that it is the topic of the subscription.
 		$event = new EventDispatcher\GenericEvent($response, contextFromResponse(
 				$response->getBody(1),
