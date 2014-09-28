@@ -148,7 +148,7 @@ function manualFetch($app, $url, Guzzle\Http\ClientInterface $client = null, arr
 			$response->getEffectiveUrl(),
 			$response->getHeaders(),
 			empty($links['self']) ? $response->getEffectiveUrl() : $links['response']);
-		$event = array_merge($extraContext, new EventDispatcher\GenericEvent($response, $context));
+		$event = new EventDispatcher\GenericEvent($response, array_merge($extraContext, $context));
 		$app['dispatcher']->dispatch('subscriptions.ping', $event);
 		return [$context, null];
 	} catch (Guzzle\Common\Exception\GuzzleException $e) {
