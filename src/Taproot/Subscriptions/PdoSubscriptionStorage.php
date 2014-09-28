@@ -45,7 +45,7 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 			}
 		}
 
-		$subscriptions = $this->db->query("SELECT * FROM {$this->prefix}subscriptions WHERE hub = :hub");
+		$subscriptions = $this->db->prepare("SELECT * FROM {$this->prefix}subscriptions WHERE hub = :hub");
 		$subscriptions->execute(['hub' => $hub]);
 		return $subscriptions->fetchAll();
 	}
