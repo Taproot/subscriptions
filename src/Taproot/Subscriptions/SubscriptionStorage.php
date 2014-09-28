@@ -12,6 +12,7 @@ namespace Taproot\Subscriptions;
  */
 interface SubscriptionStorage {
 	public function getSubscriptions();
+	public function getSubscriptionsForHub($hub);
 	public function createSubscription($topic, PushHub $hub);
 	public function getSubscription($id);
 	public function getPingsForSubscription($id, $limit=20, $offset=0);

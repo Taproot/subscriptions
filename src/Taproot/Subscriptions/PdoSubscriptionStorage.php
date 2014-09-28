@@ -6,6 +6,7 @@ use PDO;
 use Exception;
 use DateTime;
 use DateInterval;
+use InvalidArgumentException;
 
 
 /**
@@ -34,7 +35,21 @@ class PdoSubscriptionStorage implements SubscriptionStorage {
 	public function getSubscriptions() {
 		return $this->db->query("SELECT * FROM {$this->prefix}subscriptions;")->fetchAll();
 	}
-	
+
+	public function getSubscriptionsForHub($hub) {
+		if (!is_string($hub)) {
+			if ($hub instanceof PushHub) {
+				$hub = $hub->getUrl();
+			} else {
+				throw new InvalidArgumentException("The '\$hub' argument must be a string or an instance of Taproot\\Subscriptions\\PushHub.");
+			}
+		}
+
+		$subscriptions = $this->db->query("SELECT * FROM {$this->prefix}subscriptions WHERE hub = :hub");
+		$subscriptions->execute(['hub' => $hub]);
+		return $subscriptions->fetchAll();
+	}
+
 	public function createSubscription($topic, PushHub $hub) {
 		$subscription = [
 			'topic' => $topic,

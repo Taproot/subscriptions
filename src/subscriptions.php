@@ -121,6 +121,43 @@ function contextFromResponse($html, $url, $headers, $topic) {
 
 
 /**
+ * Manual Fetch
+ *
+ * Automates doing manual fetch+parse+event dispatch on a URL, as if it was being crawled or had been pinged.
+ *
+ * Example Usage:
+ *
+ *     list($context, $err) = Subscriptions\manualFetch($app, 'https://waterpigs.co.uk');
+ *
+ * @param $app
+ * @param string $url
+ * @param Guzzle\Http\ClientInterface $client
+ * @param array $extraContext
+ * @return array [array context|null, Exception|null]
+ */
+function manualFetch($app, $url, Guzzle\Http\ClientInterface $client = null, array $extraContext = []) {
+	if ($client === null) {
+		$client = new Guzzle\Http\Client();
+	}
+
+	try {
+		$response = $client->get($url)->send();
+		$links = pushLinksForResponse($response);
+		$context = contextFromResponse(
+			$response->getBody(1),
+			$response->getEffectiveUrl(),
+			$response->getHeaders(),
+			empty($links['self']) ? $response->getEffectiveUrl() : $links['response']);
+		$event = array_merge($extraContext, new EventDispatcher\GenericEvent($response, $context));
+		$app['dispatcher']->dispatch('subscriptions.ping', $event);
+		return [$context, null];
+	} catch (Guzzle\Common\Exception\GuzzleException $e) {
+		return [null, $e];
+	}
+}
+
+
+/**
  * Crawl
  *
  * Given a URL, recursively fetches rel=prev[ious], calling $callback at each stage.
@@ -130,7 +167,7 @@ function contextFromResponse($html, $url, $headers, $topic) {
  *
  * @TODO: make this function check for duplicate content (pass previousResponse on recurse) and halt if duplicated.
  */
-function crawl($url, $callback, $timeout=null, $client=null, $topic=null, $extraContext=[]) {
+function crawl($url, $callback, $timeout=null, Guzzle\Http\ClientInterface $client=null, $topic=null, array $extraContext=[]) {
 	if ($timeout !== null) {
 		$timeStarted = microtime(true);
 	} elseif ($timeout !== null and $timeout <= 0) {
