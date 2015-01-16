@@ -198,7 +198,13 @@ function crawl($url, $callback, $timeout=null, Guzzle\Http\ClientInterface $clie
 
 	$result = $callback($context);
 
-	$prevUrl = !empty($mf2['rels']['prev']) ? $mf2['rels']['prev'][0] : !empty($mf2['rels']['previous']) ? $mf2['rels']['previous'][0] : null;
+	if (!empty($mf2['rels']['prev'])) {
+		$prevUrl =  $mf2['rels']['prev'][0];
+	} elseif (!empty($mf2['rels']['previous'])) {
+		$prevUrl = $mf2['rels']['previous'][0];
+	} else {
+		$prevUrl = null;
+	}
 
 	if ($prevUrl === null or $result === false) {
 		return null;
